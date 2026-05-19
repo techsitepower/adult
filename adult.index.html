@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MahrZone Stream</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0a0a0a;
+  color:white;
+}
+
+/* HERO SLIDER */
+.hero{
+  height:240px;
+  position:relative;
+  overflow:hidden;
+  background:#111;
+}
+
+.hero-slide{
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px;
+  transition:0.6s;
+}
+
+.hero-text h1{margin:0;font-size:26px;}
+.hero-text p{opacity:.7}
+
+/* HEADER */
+header{
+  padding:10px;
+  background:#1a1a1a;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+
+input,select{
+  padding:10px;
+  margin:5px;
+  border-radius:6px;
+  border:none;
+}
+
+/* GRID */
+.container{padding:15px;}
+
+.section-title{
+  margin-top:20px;
+  color:#00ffd5;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+}
+
+.card{
+  background:#1e1e1e;
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.card:hover{background:#2a2a2a}
+
+.badge{
+  background:#ff0055;
+  font-size:11px;
+  padding:3px 6px;
+  border-radius:4px;
+  display:inline-block;
+}
+
+/* PLAYER */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.9);
+  align-items:center;
+  justify-content:center;
+}
+
+.box{
+  width:85%;
+  max-width:850px;
+  background:#111;
+  padding:10px;
+  border-radius:10px;
+}
+
+iframe{
+  width:100%;
+  height:420px;
+  border:none;
+}
+
+.close{
+  float:right;
+  cursor:pointer;
+  color:red;
+}
+
+/* HISTORY */
+.history{
+  font-size:12px;
+  color:#aaa;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HERO -->
+<div class="hero" id="hero"></div>
+
+<!-- HEADER -->
+<header>
+  <input id="search" placeholder="Search movies...">
+  <select id="sort">
+    <option value="relevance">Relevance</option>
+    <option value="new">Newest</option>
+    <option value="year">Year</option>
+  </select>
+</header>
+
+<div class="container" id="app"></div>
+
+<!-- PLAYER -->
+<div class="modal" id="modal">
+  <div class="box">
+    <span class="close" onclick="closePlayer()">✖</span>
+    <iframe id="frame"></iframe>
+  </div>
+</div>
+
+<script>
+
+/* ======================
+   MOVIE DATA (API READY)
+====================== */
+const movies = [
+{title:"Sky Force", lang:"Hindi", year:2026, new:true, link:"https://example.com/1"},
+{title:"Night Runner", lang:"English", year:2025, new:false, link:"https://example.com/2"},
+{title:"Red Zone", lang:"Hindi", year:2026, new:true, link:"https://example.com/3"},
+{title:"Metro City", lang:"English", year:2026, new:true, link:"https://example.com/4"},
+{title:"Lost Island", lang:"English", year:2024, new:false, link:"https://example.com/5"},
+];
+
+/* ======================
+   HERO SLIDER
+====================== */
+let heroIndex=0;
+
+function renderHero(){
+  const hero=document.getElementById("hero");
+  const m=movies[heroIndex];
+
+  hero.innerHTML=`
+  <div class="hero-slide">
+    <div class="hero-text">
+      <h1>${m.title}</h1>
+      <p>${m.lang} • ${m.year}</p>
+      <button onclick="openPlayer('${m.link}')">▶ Play</button>
+    </div>
+  </div>`;
+}
+
+setInterval(()=>{
+  heroIndex=(heroIndex+1)%movies.length;
+  renderHero();
+},3000);
+
+/* ======================
+   PLAYER + HISTORY
+====================== */
+const modal=document.getElementById("modal");
+const frame=document.getElementById("frame");
+
+function openPlayer(link){
+  modal.style.display="flex";
+  frame.src=link;
+
+  let history=JSON.parse(localStorage.getItem("history")||"[]");
+  history.unshift(link);
+  localStorage.setItem("history",JSON.stringify(history.slice(0,10)));
+}
+
+function closePlayer(){
+  modal.style.display="none";
+  frame.src="";
+}
+
+/* ======================
+   RENDER SYSTEM
+====================== */
+const app=document.getElementById("app");
+const search=document.getElementById("search");
+const sort=document.getElementById("sort");
+
+function render(list){
+
+  app.innerHTML="";
+
+  const sections={
+    "Latest":list.filter(m=>m.new),
+    "Movies":list
+  };
+
+  for(let sec in sections){
+
+    let data=sections[sec];
+    if(!data.length) continue;
+
+    let html=`<div class="section-title">${sec}</div><div class="grid">`;
+
+    data.forEach(m=>{
+      html+=`
+      <div class="card" onclick="openPlayer('${m.link}')">
+        ${m.new?'<div class="badge">NEW</div>':''}
+        <h4>${m.title}</h4>
+        <small>${m.lang} | ${m.year}</small>
+      </div>`;
+    });
+
+    html+="</div>";
+    app.innerHTML+=html;
+  }
+
+}
+
+/* ======================
+   SEARCH + SORT
+====================== */
+function apply(){
+  let val=search.value.toLowerCase();
+  let list=movies.filter(m=>m.title.toLowerCase().includes(val));
+
+  if(sort.value==="year")
+    list.sort((a,b)=>b.year-a.year);
+
+  render(list);
+}
+
+search.addEventListener("input",apply);
+sort.addEventListener("change",apply);
+
+/* INIT */
+renderHero();
+render(movies);
+
+</script>
+
+</body>
+</html>
