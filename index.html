@@ -8,164 +8,362 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
-body { margin:0; font-family:Roboto; background:#0f0f0f; color:#fff; }
+
+:root{
+    --bg:#0f0f0f;
+    --card:#181818;
+    --hover:#272727;
+    --text:#fff;
+    --sub:#aaa;
+    --accent:#cc0000;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Roboto',sans-serif;
+}
 
 header{
-  position:fixed; top:0; width:100%; height:60px;
-  background:#0f0f0f; display:flex; align-items:center;
-  padding:0 15px; gap:10px; z-index:10;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:60px;
+    background:#0f0f0f;
+    display:flex;
+    align-items:center;
+    padding:0 20px;
+    z-index:100;
+    border-bottom:1px solid #222;
 }
 
-.logo{font-weight:700}
-
-input{
-  flex:1; padding:8px 12px; border-radius:6px;
-  border:none; outline:none;
+.logo{
+    font-size:22px;
+    font-weight:700;
 }
 
-.main{ margin-top:80px; padding:20px; }
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-  gap:15px;
+.logo span{
+    color:var(--accent);
 }
 
-.card{
-  background:#1a1a1a; border-radius:10px;
-  overflow:hidden; cursor:pointer;
+.main-container{
+    margin-top:80px;
+    padding:20px;
 }
 
-.card img{ width:100%; display:block; }
-
-.card .info{ padding:10px; }
-
-.title{ font-size:14px; margin-bottom:5px; }
-
-.stats{ font-size:12px; color:#aaa; }
-
-button{
-  margin-top:8px;
-  padding:6px 10px;
-  border:none;
-  background:#cc0000;
-  color:white;
-  cursor:pointer;
-  border-radius:5px;
+.video-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:20px;
 }
 
-/* modal */
-.modal{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,0.9);
-  display:none;
-  justify-content:center;
-  align-items:center;
+.video-card{
+    cursor:pointer;
 }
 
-.modal-content{
-  width:90%; max-width:800px;
-  background:#000; padding:15px;
+.thumbnail-wrapper{
+    position:relative;
+    width:100%;
+    padding-top:56.25%;
+    border-radius:12px;
+    overflow:hidden;
+    background:#111;
 }
 
-.close{ float:right; cursor:pointer; }
+.thumb-img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:0.3s;
+}
+
+.video-card:hover .thumb-img{
+    transform:scale(1.05);
+}
+
+.card-meta{
+    padding-top:10px;
+}
+
+.video-title{
+    font-size:16px;
+    font-weight:500;
+    margin-bottom:5px;
+}
+
+.video-stats{
+    font-size:14px;
+    color:var(--sub);
+}
+
+/* MODAL */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.92);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+
+.modal-overlay.active{
+    display:flex;
+}
+
+.player-container{
+    width:90%;
+    max-width:900px;
+    background:#111;
+    border-radius:12px;
+    overflow:hidden;
+}
+
+.player-poster{
+    width:100%;
+    max-height:70vh;
+    object-fit:cover;
+}
+
+.player-info{
+    padding:20px;
+}
+
+.player-title{
+    font-size:24px;
+    margin-bottom:10px;
+}
+
+.player-overview{
+    color:#bbb;
+    line-height:1.6;
+    margin-bottom:20px;
+}
+
+.watch-btn{
+    display:inline-block;
+    padding:12px 20px;
+    background:var(--accent);
+    color:white;
+    text-decoration:none;
+    border-radius:6px;
+    font-weight:500;
+}
+
+.close-btn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    background:none;
+    border:none;
+    color:white;
+    font-size:28px;
+    cursor:pointer;
+}
+
 </style>
 </head>
 
 <body>
 
 <header>
-<div class="logo">StreamFlow</div>
-<input id="search" placeholder="Search movies..." />
+    <div class="logo">
+        StreamFlow <span>PRO</span>
+    </div>
 </header>
 
-<div class="main">
-<div class="grid" id="grid"></div>
-</div>
+<main class="main-container">
 
-<!-- modal -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <div class="close" onclick="closeModal()">✖</div>
-    <h3 id="mTitle"></h3>
-    <p id="mInfo"></p>
-    <a id="watchBtn" target="_blank">
-      <button>Watch Now</button>
-    </a>
-  </div>
+    <div class="video-grid" id="videoGrid"></div>
+
+</main>
+
+<!-- MODAL -->
+
+<div class="modal-overlay" id="modal">
+
+    <button class="close-btn" id="closeBtn">✕</button>
+
+    <div class="player-container">
+
+        <img id="modalPoster" class="player-poster">
+
+        <div class="player-info">
+
+            <h2 id="modalTitle" class="player-title"></h2>
+
+            <p id="modalOverview" class="player-overview"></p>
+
+            <a id="watchBtn"
+               class="watch-btn"
+               target="_blank">
+               ▶ Watch Now
+            </a>
+
+        </div>
+
+    </div>
+
 </div>
 
 <script>
-// ===== CONFIG =====
-// যদি Cloudflare Worker ব্যবহার করো তাহলে এটা বসাও
-const API_BASE = "https://api.themoviedb.org/3"; 
-const API_KEY = "PUT_YOUR_KEY_HERE"; // বা worker endpoint use করতে পারো
 
-// ===== MANUAL WATCH LINKS =====
-const watchLinks = {
-  550: "https://your-link.com/fightclub",
-  299536: "https://your-link.com/avengers"
-};
+// ==========================
+// YOUR MOVIES
+// ==========================
 
-function getWatchLink(id){
-  return watchLinks[id] || "#";
+const movies = [
+
+    {
+        query: "Avengers Endgame",
+        watch: "https://your-link.com/avengers"
+    },
+
+    {
+        query: "Interstellar",
+        watch: "https://your-link.com/interstellar"
+    },
+
+    {
+        query: "Fight Club",
+        watch: "https://your-link.com/fightclub"
+    }
+
+];
+
+// ==========================
+// TMDB API
+// ==========================
+
+// IF USING CLOUDFLARE WORKER
+const API = "/api/search";
+
+// ==========================
+
+const grid = document.getElementById("videoGrid");
+
+const modal = document.getElementById("modal");
+
+const modalPoster = document.getElementById("modalPoster");
+
+const modalTitle = document.getElementById("modalTitle");
+
+const modalOverview = document.getElementById("modalOverview");
+
+const watchBtn = document.getElementById("watchBtn");
+
+const closeBtn = document.getElementById("closeBtn");
+
+// ==========================
+// FETCH MOVIE
+// ==========================
+
+async function getMovie(query){
+
+    const res = await fetch(
+        `${API}?query=${encodeURIComponent(query)}`
+    );
+
+    const data = await res.json();
+
+    return data.results[0];
+
 }
 
-// ===== TMDB SEARCH =====
-async function searchMovies(q){
-  const res = await fetch(
-    `${API_BASE}/search/movie?query=${q}&api_key=${API_KEY}`
-  );
-  return await res.json();
+// ==========================
+// LOAD MOVIES
+// ==========================
+
+async function loadMovies(){
+
+    grid.innerHTML = "";
+
+    for(const item of movies){
+
+        const movie = await getMovie(item.query);
+
+        if(!movie) continue;
+
+        const card = document.createElement("div");
+
+        card.className = "video-card";
+
+        card.innerHTML = `
+
+            <div class="thumbnail-wrapper">
+
+                <img
+                    class="thumb-img"
+                    src="https://image.tmdb.org/t/p/w500${movie.poster_path}"
+                >
+
+            </div>
+
+            <div class="card-meta">
+
+                <div class="video-title">
+                    ${movie.title}
+                </div>
+
+                <div class="video-stats">
+                    ⭐ ${movie.vote_average}
+                </div>
+
+            </div>
+
+        `;
+
+        card.addEventListener("click", () => {
+
+            modal.classList.add("active");
+
+            modalPoster.src =
+                "https://image.tmdb.org/t/p/original" +
+                movie.backdrop_path;
+
+            modalTitle.innerText = movie.title;
+
+            modalOverview.innerText = movie.overview;
+
+            watchBtn.href = item.watch;
+
+        });
+
+        grid.appendChild(card);
+
+    }
+
 }
 
-// ===== RENDER =====
-function render(movies){
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
+// ==========================
+// CLOSE MODAL
+// ==========================
 
-  movies.forEach(m => {
-    const div = document.createElement("div");
-    div.className = "card";
-
-    div.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w500${m.poster_path}">
-      <div class="info">
-        <div class="title">${m.title}</div>
-        <div class="stats">⭐ ${m.vote_average}</div>
-        <button>Watch</button>
-      </div>
-    `;
-
-    div.onclick = () => openModal(m);
-
-    grid.appendChild(div);
-  });
-}
-
-// ===== MODAL =====
-function openModal(m){
-  document.getElementById("modal").style.display="flex";
-  document.getElementById("mTitle").innerText = m.title;
-  document.getElementById("mInfo").innerText = m.overview;
-
-  document.getElementById("watchBtn").href = getWatchLink(m.id);
-}
-
-function closeModal(){
-  document.getElementById("modal").style.display="none";
-}
-
-// ===== SEARCH =====
-document.getElementById("search").addEventListener("keyup", async (e)=>{
-  if(e.key === "Enter"){
-    const data = await searchMovies(e.target.value);
-    render(data.results || []);
-  }
+closeBtn.addEventListener("click", () => {
+    modal.classList.remove("active");
 });
 
-// default load
-searchMovies("avengers").then(d => render(d.results));
+modal.addEventListener("click", (e) => {
+    if(e.target === modal){
+        modal.classList.remove("active");
+    }
+});
+
+// ==========================
+// INIT
+// ==========================
+
+loadMovies();
 
 </script>
 
